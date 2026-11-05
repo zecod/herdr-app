@@ -496,12 +496,12 @@ export default class Spaces extends View {
   // strips along the edges (each clips its own copy), so it never covers the content: herdr
   // paints the animated shape above backgrounds. The strips stop short of the rounded corners.
   // Native animation: no timers, it stops when not shown.
-  beam(t, inner, { id, w, h, radius }) {
+  beam(t, inner, { id, w, h, radius, edge }) {
     const d = Math.ceil(Math.hypot(w, h)) + 6, k = 1.5, r = Math.max(2, radius - 1);
     const strip = (n, x, y, sw, sh) => div().id(`${id}-beam-${n}`).absolute().left(x).top(y).w(sw).h(sh).overflow_hidden()
       .child(svg("mods/my-spaces/beam.svg").absolute().w(d).h(d).left((w - d) / 2 - x).top((h - d) / 2 - y).text_color(t.working).spin(1700));
     return div().id(`${id}-beam`).relative().w(w).h(h).flex_none()
-      .child(inner.w(w).h(h).rounded(radius).border_1().border_color(t.border))
+      .child(inner.w(w).h(h).rounded(radius).border_1().border_color(edge ?? t.border))
       .child(strip("t", r, 0, w - 2 * r, k))
       .child(strip("b", r, h - k, w - 2 * r, k))
       .child(strip("l", 0, r, k, h - 2 * r))
@@ -926,14 +926,15 @@ export default class Spaces extends View {
     const tile = (a) => {
       const color = t[a.status] ?? t.dim;
       const pic = programIcon(a.program, 12, a.status === "idle" ? t.muted : color);
-      const beaming = a.focused && a.status === "working" && this.windowActive !== false;
+      // Every working agent gets the beam (the one you're on: a brighter edge). Still when the window isn't in front.
+      const beaming = a.status === "working" && this.windowActive !== false;
       if (beaming) {
         return h_flex().id(`rail-${a.address}`).h(26).flex_none().justify_center().items_center()
           .tooltip(`${agentTitle(a)} · working`)
           .on_click(() => run("pane.focus", { pane: a.pane }))
           .on_mouse_down("left", (e) => smartPress(this, a.address, e)) // smart split
           .child(badge(a, this.beam(t, h_flex().items_center().justify_center().bg(t.chrome).child(pic ?? div().size(6).rounded(3).bg(color)),
-            { id: `rail-tile-${a.address}`, w: 22, h: 22, radius: 6 })));
+            { id: `rail-tile-${a.address}`, w: 22, h: 22, radius: 6, edge: a.focused ? t.foreground : t.border })));
       }
       return h_flex().id(`rail-${a.address}`).h(26).flex_none().justify_center().items_center()
         .tooltip(`${agentTitle(a)} · ${a.status === "blocked" ? "needs you" : a.status === "done" ? "just finished" : a.status}`)
@@ -945,7 +946,6 @@ export default class Spaces extends View {
           .bg(a.status === "idle" ? t.chrome : color + "2e")
           .when(a.focused, (el) => el.border_color(t.foreground))
           .when(a.status === "idle" && !a.focused, (el) => el.opacity(0.55))
-          .when(a.status === "working" && this.windowActive !== false, (el) => el.loop("opacity", { from: 0.55, to: 1, period: 1400 }))
           .when(a.status === "blocked" && this.windowActive !== false, (el) => el.loop("opacity", { from: 0.35, to: 1, period: 900 }))
           .hover((s) => s.opacity(1))
           .child(pic ?? div().size(6).rounded(3).bg(color))));

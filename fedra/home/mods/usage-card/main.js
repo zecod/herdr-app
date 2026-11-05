@@ -407,7 +407,7 @@ export default class UsageCard extends View {
   // The block's height for what's shown, kept in sync with the drawing below.
   needed(narrow) {
     const gs = this.groups();
-    if (narrow) return gs.length ? 12 + gs.length * 46 + 4 * (gs.length - 1) : 0;
+    if (narrow) return gs.length ? 12 + gs.length * 34 + 4 * (gs.length - 1) : 0;
     const frame = 12 + 2 + 20 + 20 + 10; // outer padding, border, card padding, header + gap
     if (!gs.length) return frame + 16;
     if (this.collapsed) return frame + gs.length * 18 + 6 * (gs.length - 1);
@@ -531,16 +531,13 @@ export default class UsageCard extends View {
           const r = pairRows(g.tool, g.au.rows)[0] ?? null;
           const pct = r?.pct == null ? null : Math.max(0, Math.min(100, Math.round(r.pct)));
           const color = pct == null ? t.dim : pct >= 90 ? t.blocked : pct >= 70 ? t.ansi3 : t.ansi2;
-          // The tool's small logo, then its ring with the percentage in the middle.
-          return v_flex().id(`rail-usage-${g.tool}`).h(46).items_center().gap(2)
-            .tooltip(r ? `${TOOLS[g.tool].name} · ${r.label} ${pct}%` : TOOLS[g.tool].name)
-            .child(image(TOOLS[g.tool].icon).w(11).h(11).flex_none())
+          // The tool's logo inside a ring filled to the limit that matters now; the number is in the tooltip.
+          return h_flex().id(`rail-usage-${g.tool}`).h(34).justify_center().items_center()
+            .tooltip(r ? `${TOOLS[g.tool].name} · ${r.label} ${pct}%` : `${TOOLS[g.tool].name} · no usage yet`)
             .child(div().relative().size(30).flex_none()
               .child(svg("mods/usage-card/rings/track.svg").absolute().left(0).top(0).size(30).text_color(t.border))
               .when(pct != null, (el) => el.child(svg(`mods/usage-card/rings/p${pct}.svg`).absolute().left(0).top(0).size(30).text_color(color)))
-              .child(div().absolute().left(0).top(0).size(30).flex().items_center().justify_center()
-                .text_size(pct === 100 ? 8.5 : 9.5).font_semibold().text_color(pct == null ? t.dim : t.foreground)
-                .child(pct == null ? "!" : `${pct}%`)));
+              .child(image(TOOLS[g.tool].icon).absolute().left(8).top(8).w(14).h(14)));
         }));
     }
     return sized(v_flex().id("usage")).size_full().bg(t.chrome).px(8).pt(4).pb(8)
