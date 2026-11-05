@@ -6,8 +6,8 @@
 // subagents-helper.cjs reads the end of the transcripts (state, what it's doing, when it started),
 // because the mod runtime's fs can't stat or read part of a file.
 //
-// Shown: every running one, and finished or stopped ones for KEEP_MS after they end. A running one
-// whose transcript hasn't moved for STALE_MS is taken as dead (the CLI crashed or was killed).
+// Shown: only the running ones; one that finishes (or stops) leaves the sidebar at once. A running
+// one whose transcript hasn't moved for STALE_MS is taken as dead (the CLI crashed or was killed).
 //
 // Cost: nothing runs while no subagent is busy. main.js watches each subagents/ folder
 // (watchFolder) and calls refresh() with the changed transcripts; the helper runs then, at most
@@ -19,7 +19,6 @@ import { b64 } from "./speed.js";
 
 const HELPER = `${appHome().replace(/\\/g, "/")}/mods/my-spaces/subagents-helper.cjs`;
 export const STALE_MS = 12 * 60 * 1000;
-export const KEEP_MS = 3 * 60 * 1000;
 
 const dirs = new Map(); // session dir -> { subs: Map(id -> sub), listed: 0 }
 // sub: { id, description, type, background, file, size, birthMs, lastAt, state, activity, result }
@@ -83,7 +82,7 @@ export function shown(dir, now = Date.now()) {
   if (!e) return [];
   return [...e.subs.values()]
     .map((s) => (s.state === "running" && now - s.lastAt > STALE_MS ? { ...s, state: "stopped" } : s))
-    .filter((s) => s.state === "running" || (s.state !== "unknown" && now - s.lastAt < KEEP_MS))
+    .filter((s) => s.state === "running")
     .sort((a, b) => (a.birthMs ?? 0) - (b.birthMs ?? 0));
 }
 
